@@ -7,15 +7,8 @@ permalink: /about/
 
 # About me
 
-Write a few paragraphs about yourself here: who you are, what you do, what you care about, and what people can expect from your writing.
+I do a lot of things I care about, and I hope that through them I can contribute to people's maturation, development, and to making their lives meaningful.
 
-## What I'm working on
-
-- Something you're building or learning
-- Something else
-
-## Get in touch
-
-The easiest way to reach me is by email. Add your address in `_config.yml` and it will show in the footer.
+This is where I write about development.
 
 </div>
