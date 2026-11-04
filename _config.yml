@@ -1,0 +1,17 @@
+# ---- Your details: edit these ----
+title: Olivers Bulgacs
+description: Writing about things I'm learning, building and thinking about.
+author: Olivers Bulgacs
+email: ""            # optional, shown in the footer if filled in
+github: "oliversbulgacs"        # optional, your GitHub username
+linkedin: ""         # optional, full LinkedIn URL
+
+# ---- Visibility ----
+# true  = the site is public by link, but asks search engines NOT to list it.
+# false = normal site; Google etc. can find and list it.
+hide_from_search: true
+
+# ---- Technical (you can leave these alone) ----
+permalink: /blog/:title/
+markdown: kramdown
+exclude: [README.md, Gemfile, Gemfile.lock]

@@ -1,29 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Coming Soon</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f8f8f8;
-      color: #333;
-      text-align: center;
-      padding: 100px;
-    }
-    h1 {
-      font-size: 3em;
-      margin-bottom: 0.2em;
-    }
-    p {
-      font-size: 1.2em;
-      color: #666;
-    }
-  </style>
-</head>
-<body>
-  <h1>🚧 Coming Soon</h1>
-  <p>Something awesome is on the way. Stay tuned!</p>
-</body>
-</html>
+---
+layout: default
+---
+<section class="intro">
+  <h1>Hi, I'm {{ site.author }}.</h1>
+  <p>{{ site.description }} <a href="{{ '/about/' | relative_url }}">More about me →</a></p>
+</section>
+
+<section class="posts">
+  <h2>Writing</h2>
+  {% if site.posts.size == 0 %}<p class="empty">Nothing here yet.</p>{% endif %}
+  <ul>
+    {% for post in site.posts %}
+    <li>
+      <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+      <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
