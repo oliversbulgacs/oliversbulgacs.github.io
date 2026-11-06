@@ -316,7 +316,7 @@ async function loadAll(){
   let list;
   try{ list = await gh("GET", contents(PRIVATE_REPO, WRITING_DIR)) }
   catch(e){ if(e.status===404) list = []; else return handleError(e) }
-  const files = list.filter(f => f.type==="file" && f.name.endsWith(".md"));
+  const files = list.filter(f => f.type==="file" && f.name.endsWith(".md") && f.name.toLowerCase()!=="readme.md");
   const out = [];
   // fetch a few at a time
   for(let i=0;i<files.length;i+=6){
