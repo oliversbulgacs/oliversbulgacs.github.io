@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#fbfaf7">
+<title>Writing desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!--
+  HOW THIS APP WORKS (short version)
+  - This page is public, but it's an empty shell. Your writing is NOT in it.
+  - Your pieces live as Markdown files in your PRIVATE repo, folder "writing/".
+  - To read/write them, the page calls GitHub's API using your personal access
+    token, which is kept only in this browser (localStorage).
+  - Moving a piece to "Published" copies it into the PUBLIC site repo's _posts/
+    folder. GitHub Pages then rebuilds the site (~1 minute). Moving it out of
+    "Published" deletes that copy, so it disappears from the site again.
+-->
+<style>
+:root{
+  --bg:#fbfaf7;--panel:#f3f1ec;--card:#fff;--text:#1f1d1a;--muted:#6f6a62;--line:#e6e2da;
+  --accent:#9a3b1c;--accent-ink:#fff;
+  --c-draft:#8a857c;--c-writing:#c98a1b;--c-editing:#3c6fb0;--c-published:#3f8a4f;
+  --serif:"Newsreader",Georgia,serif;--sans:"Inter",system-ui,-apple-system,sans-serif;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#161513;--panel:#1d1c19;--card:#24221f;--text:#ece8e1;--muted:#9b958b;--line:#33302b;
+  --accent:#e08a62;--accent-ink:#1a1310;
+  --c-draft:#9b958b;--c-writing:#e0a540;--c-editing:#6f9be0;--c-published:#6dbb7c;
+  --shadow:none;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-text-size-adjust:100%}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:8px 14px;font-weight:500}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--text)}
+.btn.danger{color:#b3261e}
+
+/* ---------- Lock screen ---------- */
+#lock{max-width:520px;margin:0 auto;padding:56px 20px}
+#lock h1{font:600 2rem/1.2 var(--serif);margin:0 0 8px}
+#lock p{color:var(--muted)}
+#lock ol{padding-left:20px;color:var(--muted)}
+#lock li{margin:6px 0}
+#lock input{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);margin:16px 0 10px;font-family:ui-monospace,monospace;font-size:14px}
+#lock .err{color:#b3261e;min-height:1.5em}
+
+/* ---------- Board ---------- */
+#board{display:flex;flex-direction:column;height:100%}
+.topbar{display:flex;align-items:center;gap:10px;padding:14px 20px;padding-top:max(14px,env(safe-area-inset-top))}
+.topbar h1{font:600 1.3rem var(--serif);margin:0;flex:1}
+.topbar a{color:var(--muted);text-decoration:none;font-size:14px}
+.tabs{display:none}
+.columns{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:6px 20px 24px;min-height:0}
+.col{background:var(--panel);border-radius:12px;display:flex;flex-direction:column;min-height:0;border:2px solid transparent}
+.col.over{border-color:var(--accent)}
+.col header{display:flex;align-items:center;gap:8px;padding:12px 14px 6px;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.count{margin-left:auto;font-weight:500}
+.list{flex:1;overflow-y:auto;padding:6px 10px 12px;display:flex;flex-direction:column;gap:8px}
+.empty{color:var(--muted);font-size:13px;padding:10px 6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 12px 10px;box-shadow:var(--shadow);cursor:pointer}
+.card:hover{border-color:var(--muted)}
+.card.dragging{opacity:.4}
+.card h3{font:600 1.05rem/1.3 var(--serif);margin:0 0 4px;overflow-wrap:anywhere}
+.card p{margin:0 0 8px;color:var(--muted);font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.card select{margin-left:auto;font-size:12px;border:1px solid var(--line);border-radius:6px;background:var(--card);padding:3px 4px}
+.fab{position:fixed;right:20px;bottom:max(20px,env(safe-area-inset-bottom));border-radius:999px;padding:14px 20px;box-shadow:0 4px 16px rgba(0,0,0,.18);font-weight:600}
+
+@media (max-width:820px){
+  .topbar{padding:12px 16px}
+  .tabs{display:flex;gap:4px;padding:0 16px 10px;overflow-x:auto}
+  .tabs{display:grid;grid-template-columns:repeat(4,1fr);overflow:visible}
+  .tabs .dot{display:none}
+  body #toast{bottom:calc(96px + env(safe-area-inset-bottom))}
+  .tabs button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 4px;font-size:12.5px;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px}
+  .tabs button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+  .columns{display:block;padding:0 16px 96px;overflow-y:auto}
+  .col{display:none;background:transparent}
+  .col.on{display:flex}
+  .col header{display:none}
+  .list{padding:0;overflow:visible}
+}
+
+/* ---------- Editor ---------- */
+#editor{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;z-index:10}
+.ebar{display:flex;align-items:center;gap:8px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));border-bottom:1px solid var(--line)}
+.ebar .status{font-size:13px;color:var(--muted);margin-right:auto;white-space:nowrap}
+.ebar select{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:7px 8px;font-weight:500}
+.tools{display:flex;gap:2px;padding:6px 12px;border-bottom:1px solid var(--line);overflow-x:auto;background:var(--bg)}
+.tools button{white-space:nowrap;flex:none;border:0;background:transparent;border-radius:6px;min-width:38px;height:36px;padding:0 8px;color:var(--muted);font-weight:600}
+.tools button:hover,.tools button.on{background:var(--panel);color:var(--text)}
+.tools .sep{width:1px;background:var(--line);margin:6px 4px;flex:none}
+.escroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.page{max-width:700px;margin:0 auto;padding:36px 20px 120px}
+#title{width:100%;resize:none;overflow:hidden;display:block;border:0;background:transparent;font:600 2.1rem/1.2 var(--serif);outline:none;padding:0;margin:0 0 18px}
+#title::placeholder{color:var(--line)}
+#body{font:19px/1.7 var(--serif);outline:none;min-height:50vh}
+#body.empty::before{content:"Start writing…";color:var(--muted);opacity:.6;position:absolute;pointer-events:none}
+#body p{margin:0 0 1em}
+#body h2{font-size:1.45rem;line-height:1.3;margin:1.4em 0 .5em}
+#body h3{font-size:1.2rem;margin:1.2em 0 .4em}
+#body blockquote{margin:1em 0;padding-left:18px;border-left:3px solid var(--line);color:var(--muted);font-style:italic}
+#body a{color:var(--accent)}
+.efoot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 16px;padding-bottom:max(8px,env(safe-area-inset-bottom));border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.efoot a{color:var(--accent)}
+
+/* ---------- Toast ---------- */
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:20;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+#toast a{color:inherit;font-weight:600}
+#toast.err{background:#b3261e;color:#fff}
+#loading{padding:40px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- 1. LOCK SCREEN: shown until a working token is saved on this device -->
+<section id="lock" hidden>
+  <h1>Writing desk</h1>
+  <p>This is private. To open it on this device, paste your GitHub access token. It stays only in this browser and is sent only to GitHub.</p>
+  <ol>
+    <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → new fine-grained token</a>.</li>
+    <li>Name it “Writing desk”. Set an expiration you're comfortable with.</li>
+    <li>Repository access: <b>Only select repositories</b> → pick <b>oliversbulgacs</b> and <b>oliversbulgacs.github.io</b>.</li>
+    <li>Permissions → Repository permissions → <b>Contents: Read and write</b>.</li>
+    <li>Generate, copy, and paste it below.</li>
+  </ol>
+  <input id="tokenInput" type="password" autocomplete="off" placeholder="github_pat_…" aria-label="GitHub token">
+  <div class="err" id="lockErr"></div>
+  <button class="btn primary" id="unlockBtn">Unlock</button>
+</section>
+
+<!-- 2. BOARD: the four baskets -->
+<section id="board" hidden>
+  <div class="topbar">
+    <h1>Writing desk</h1>
+    <a href="/" target="_blank" rel="noopener">View site ↗</a>
+    <button class="btn ghost" id="refreshBtn" title="Reload from GitHub">↻</button>
+    <button class="btn ghost" id="lockBtn" title="Forget token on this device">Lock</button>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="columns" id="columns"><div id="loading">Loading your writing…</div></div>
+  <button class="btn primary fab" id="newBtn">+ New piece</button>
+</section>
+
+<!-- 3. EDITOR -->
+<section id="editor" hidden>
+  <div class="ebar">
+    <button class="btn ghost" id="backBtn">← Back</button>
+    <span class="status" id="saveStatus">Saved</span>
+    <select id="statusSelect" aria-label="Basket"></select>
+    <button class="btn ghost danger" id="deleteBtn" title="Delete piece">Delete</button>
+  </div>
+  <div class="tools" id="tools">
+    <button data-cmd="bold" title="Bold"><b>B</b></button>
+    <button data-cmd="italic" title="Italic"><i>I</i></button>
+    <span class="sep"></span>
+    <button data-block="h2" title="Heading">H</button>
+    <button data-block="h3" title="Small heading">h</button>
+    <button data-block="blockquote" title="Quote">“ ”</button>
+    <span class="sep"></span>
+    <button data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+    <button data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+    <button data-link title="Link">Link</button>
+  </div>
+  <div class="escroll">
+    <div class="page">
+      <textarea id="title" rows="1" placeholder="Title" autocomplete="off"></textarea>
+      <div id="body" contenteditable="true" spellcheck="true"></div>
+    </div>
+  </div>
+  <div class="efoot">
+    <span id="wordCount">0 words</span>
+    <span id="liveLink"></span>
+  </div>
+</section>
+
+<div id="toast" hidden></div>
+
+<script src="vendor/marked.min.js"></script>
+<script src="vendor/turndown.js"></script>
+<script src="vendor/purify.min.js"></script>
+<script>
+/* =====================================================================
+   SETTINGS: where things live on GitHub
+   ===================================================================== */
+const OWNER = "oliversbulgacs";
+const PRIVATE_REPO = "oliversbulgacs";            // your writing (private)
+const WRITING_DIR = "writing";                     // folder inside it
+const SITE_REPO = "oliversbulgacs.github.io";      // your public website
+const SITE_URL = "https://oliversbulgacs.github.io";
+
+const BASKETS = [
+  {id:"draft",     label:"Drafts"},
+  {id:"writing",   label:"Writing"},
+  {id:"editing",   label:"Editing"},
+  {id:"published", label:"Published"},
+];
+const TOKEN_KEY = "writing-desk-token";
+
+/* ---------- tiny storage helpers (localStorage can fail in private mode) ---------- */
+const store = {
+  get(k){ try{ return localStorage.getItem(k) }catch{ return null } },
+  set(k,v){ try{ localStorage.setItem(k,v) }catch{} },
+  del(k){ try{ localStorage.removeItem(k) }catch{} },
+};
+
+let token = store.get(TOKEN_KEY);
+let pieces = [];          // everything loaded from GitHub
+let current = null;       // piece open in the editor
+let mobileTab = "draft";
+
+const $ = id => document.getElementById(id);
+
+/* =====================================================================
+   GITHUB API
+   Every read/write is one HTTPS request to api.github.com with your token.
+   Files are sent and received base64-encoded; "sha" is GitHub's version id,
+   which it requires when updating so you never overwrite a newer copy.
+   ===================================================================== */
+async function gh(method, path, body){
+  const res = await fetch("https://api.github.com" + path, {
+    method, cache:"no-store",
+    headers:{
+      "Authorization":"Bearer " + token,
+      "Accept":"application/vnd.github+json",
+      "X-GitHub-Api-Version":"2022-11-28",
+      ...(body ? {"Content-Type":"application/json"} : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if(!res.ok){
+    const e = new Error("GitHub " + res.status); e.status = res.status;
+    try{ e.detail = (await res.json()).message }catch{}
+    throw e;
+  }
+  return res.status === 204 ? null : res.json();
+}
+const enc = s => { const b = new TextEncoder().encode(s); let bin=""; for(let i=0;i<b.length;i+=0x8000) bin += String.fromCharCode(...b.subarray(i,i+0x8000)); return btoa(bin) };
+const dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,"")), c => c.charCodeAt(0)));
+const contents = (repo, path) => `/repos/${OWNER}/${repo}/contents/${path.split("/").map(encodeURIComponent).join("/")}`;
+
+async function readFile(repo, path){
+  try{ const d = await gh("GET", contents(repo,path)); return {text:dec(d.content), sha:d.sha} }
+  catch(e){ if(e.status===404) return null; throw e }
+}
+async function writeFile(repo, path, text, sha, message){
+  const d = await gh("PUT", contents(repo,path), {message, content:enc(text), ...(sha?{sha}:{})});
+  return d.content.sha;
+}
+async function deleteFile(repo, path, sha, message){
+  await gh("DELETE", contents(repo,path), {message, sha});
+}
+
+/* =====================================================================
+   FILE FORMAT
+   Each piece is a Markdown file with a small header ("front matter"):
+     ---
+     title: "My piece"
+     status: writing
+     created: 2026-11-06
+     updated: 2026-11-06T14:03:00Z
+     ---
+     The text in Markdown…
+   ===================================================================== */
+function parseFile(text){
+  text = text.replace(/\r\n/g,"\n");
+  const m = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  const meta = {};
+  if(!m) return {meta, body:text};
+  for(const line of m[1].split("\n")){
+    const i = line.indexOf(":"); if(i<0) continue;
+    let v = line.slice(i+1).trim();
+    if(v.startsWith('"')){ try{ v = JSON.parse(v) }catch{} }
+    meta[line.slice(0,i).trim()] = v;
+  }
+  return {meta, body:m[2].replace(/^\n+/,"")};
+}
+function buildFile(p){
+  const lines = ["---", `title: ${JSON.stringify(p.title||"Untitled")}`, `status: ${p.status}`, `created: ${p.created}`, `updated: ${p.updated}`];
+  if(p.published_date) lines.push(`published_date: ${p.published_date}`);
+  if(p.slug) lines.push(`slug: ${p.slug}`);
+  return lines.join("\n") + "\n---\n\n" + (p.body||"").trim() + "\n";
+}
+function buildPost(p){
+  return `---\nlayout: post\ntitle: ${JSON.stringify(p.title||"Untitled")}\n---\n\n${(p.body||"").trim()}\n`;
+}
+const today = () => new Date().toISOString().slice(0,10);
+// The web address is made from the title the first time a piece is published, then kept forever
+// (stored as "slug"), so links you share keep working even if you rename the piece.
+const slugOf = p => p.slug || slugify(p.title);
+const postPath = p => `_posts/${p.published_date}-${slugOf(p)}.md`;
+const postUrl = p => `${SITE_URL}/blog/${slugOf(p)}/`;
+function slugify(t){
+  const s = (t||"").normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase()
+    .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60);
+  return s || "untitled";
+}
+
+/* =====================================================================
+   LOADING
+   ===================================================================== */
+async function loadAll(){
+  $("columns").innerHTML = '<div id="loading">Loading your writing…</div>';
+  let list;
+  try{ list = await gh("GET", contents(PRIVATE_REPO, WRITING_DIR)) }
+  catch(e){ if(e.status===404) list = []; else return handleError(e) }
+  const files = list.filter(f => f.type==="file" && f.name.endsWith(".md"));
+  const out = [];
+  // fetch a few at a time
+  for(let i=0;i<files.length;i+=6){
+    const batch = await Promise.all(files.slice(i,i+6).map(async f => {
+      const r = await readFile(PRIVATE_REPO, f.path); if(!r) return null;
+      const {meta, body} = parseFile(r.text);
+      return { path:f.path, sha:r.sha, title:meta.title||"Untitled",
+        status: BASKETS.some(b=>b.id===meta.status) ? meta.status : "draft",
+        created: meta.created||today(), updated: meta.updated||"", published_date: meta.published_date||"", slug: meta.slug||"", body };
+    }).map(p => p.catch(handleError)));
+    out.push(...batch.filter(Boolean));
+  }
+  pieces = out;
+  renderBoard();
+}
+
+/* =====================================================================
+   BOARD
+   ===================================================================== */
+const words = s => (s.match(/[\p{L}\p{N}’']+/gu)||[]).length;
+function excerpt(md){ return md.replace(/[#>*_`\[\]()-]/g," ").replace(/\s+/g," ").trim().slice(0,140) }
+function when(iso){
+  if(!iso) return "";
+  const d = new Date(iso); if(isNaN(d)) return "";
+  const days = Math.floor((Date.now()-d)/864e5);
+  if(days<1) return "Today"; if(days<2) return "Yesterday"; if(days<7) return days+" days ago";
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+}
+function statusOptions(sel){
+  return BASKETS.map(b => `<option value="${b.id}"${b.id===sel?" selected":""}>${b.label}</option>`).join("");
+}
+
+function renderBoard(){
+  const cols = $("columns"); cols.innerHTML = "";
+  const tabs = $("tabs"); tabs.innerHTML = "";
+  for(const b of BASKETS){
+    const items = pieces.filter(p=>p.status===b.id).sort((x,y)=>(y.updated||"").localeCompare(x.updated||""));
+    // mobile tab
+    const t = document.createElement("button");
+    t.className = b.id===mobileTab ? "on" : "";
+    t.innerHTML = `<span class="dot" style="background:var(--c-${b.id})"></span>${b.label} <span>${items.length}</span>`;
+    t.onclick = () => { mobileTab = b.id; renderBoard() };
+    tabs.append(t);
+    // column
+    const col = document.createElement("div");
+    col.className = "col" + (b.id===mobileTab ? " on" : "");
+    col.innerHTML = `<header><span class="dot" style="background:var(--c-${b.id})"></span>${b.label}<span class="count">${items.length}</span></header><div class="list"></div>`;
+    const list = col.querySelector(".list");
+    if(!items.length) list.innerHTML = `<div class="empty">${b.id==="published" ? "Nothing published yet. Move a piece here to put it on your site." : "Empty"}</div>`;
+    for(const p of items) list.append(cardFor(p));
+    // drag & drop (desktop)
+    col.addEventListener("dragover", e => { e.preventDefault(); col.classList.add("over") });
+    col.addEventListener("dragleave", () => col.classList.remove("over"));
+    col.addEventListener("drop", e => {
+      e.preventDefault(); col.classList.remove("over");
+      const p = pieces.find(x => x.path === e.dataTransfer.getData("text/plain"));
+      if(p) move(p, b.id);
+    });
+    cols.append(col);
+  }
+}
+function cardFor(p){
+  const c = document.createElement("article");
+  c.className = "card"; c.draggable = true;
+  const h = document.createElement("h3"); h.textContent = p.title || "Untitled";
+  const ex = document.createElement("p"); ex.textContent = excerpt(p.body) || "No text yet";
+  const meta = document.createElement("div"); meta.className = "meta";
+  meta.innerHTML = `<span>${words(p.body)} words</span><span>${when(p.updated)}</span><select aria-label="Move to">${statusOptions(p.status)}</select>`;
+  const sel = meta.querySelector("select");
+  sel.onclick = e => e.stopPropagation();
+  sel.onchange = () => move(p, sel.value);
+  c.append(h, ex, meta);
+  c.onclick = () => openEditor(p);
+  c.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", p.path); c.classList.add("dragging") });
+  c.addEventListener("dragend", () => c.classList.remove("dragging"));
+  return c;
+}
+
+/* =====================================================================
+   MOVING BETWEEN BASKETS  (this is where publishing happens)
+   - into Published   → write _posts/DATE-slug.md to the public site repo
+   - out of Published → delete that file from the public site repo
+   - always           → update "status" in the private file
+   ===================================================================== */
+async function move(p, to){
+  const from = p.status;
+  if(from === to) return;
+  if(p === current) await saveNow();
+  try{
+    if(to === "published"){
+      if(!p.published_date) p.published_date = today();
+      if(!p.slug) p.slug = slugify(p.title);
+      await publish(p);
+    }
+    if(from === "published"){
+      await unpublish(p);
+    }
+    p.status = to;
+    p.updated = new Date().toISOString();
+    p.sha = await writeFile(PRIVATE_REPO, p.path, buildFile(p), p.sha, `Move "${p.title}" to ${to}`);
+    if(to === "published") toast(`Published. It'll be live in about a minute: <a href="${postUrl(p)}" target="_blank" rel="noopener">open</a>`);
+    else if(from === "published") toast("Taken off your site. It's safe here in " + label(to) + ".");
+    else toast("Moved to " + label(to));
+  }catch(e){ handleError(e) }
+  if(p === current){ $("statusSelect").value = p.status; updateLiveLink() }
+  renderBoard();
+}
+const label = id => BASKETS.find(b=>b.id===id).label;
+async function publish(p){
+  const existing = await readFile(SITE_REPO, postPath(p));
+  await writeFile(SITE_REPO, postPath(p), buildPost(p), existing?.sha, `Publish: ${p.title}`);
+}
+async function unpublish(p){
+  const existing = await readFile(SITE_REPO, postPath(p));
+  if(existing) await deleteFile(SITE_REPO, postPath(p), existing.sha, `Unpublish: ${p.title}`);
+}
+
+/* =====================================================================
+   EDITOR
+   You write in formatted text. On save, the text is converted to Markdown
+   (turndown). On open, Markdown is turned back into formatted text (marked).
+   ===================================================================== */
+const turndown = new TurndownService({headingStyle:"atx", bulletListMarker:"-", emDelimiter:"*", codeBlockStyle:"fenced"});
+const clean = html => DOMPurify.sanitize(html, {
+  ALLOWED_TAGS:["p","br","h1","h2","h3","h4","strong","b","em","i","u","ul","ol","li","blockquote","a","pre","code","hr"],
+  ALLOWED_ATTR:["href"],
+});
+let saveTimer = null, dirty = false, saving = null;
+
+function openEditor(p){
+  current = p;
+  $("title").value = p.title === "Untitled" ? "" : p.title;
+  $("body").innerHTML = clean(marked.parse(p.body || ""));
+  $("statusSelect").innerHTML = statusOptions(p.status);
+  // Restore unsaved text kept on this device, if it was based on this same version
+  const bk = readBackup(p);
+  if(bk){ $("title").value = bk.title; $("body").innerHTML = clean(bk.html); dirty = true; setStatus("Restored unsaved changes"); scheduleSave() }
+  else { dirty = false; setStatus("Saved") }
+  $("board").hidden = true; $("editor").hidden = false;
+  updateMeta(); updateLiveLink(); fitTitle();
+  history.pushState({editor:true}, "");
+  if(!p.body && !bk) $("title").focus();
+}
+async function closeEditor(){
+  await saveNow();
+  current = null;
+  $("editor").hidden = true; $("board").hidden = false;
+  renderBoard();
+}
+function setStatus(t){ $("saveStatus").textContent = t }
+function updateMeta(){
+  const txt = $("body").innerText || "";
+  $("wordCount").textContent = words(txt) + " words";
+  $("body").classList.toggle("empty", !txt.trim() && !$("body").querySelector("li,blockquote,h2,h3"));
+}
+function updateLiveLink(){
+  $("liveLink").innerHTML = current?.status==="published" ? `<a href="${postUrl(current)}" target="_blank" rel="noopener">On your site ↗</a>` : "";
+}
+function onEdit(){
+  dirty = true; setStatus("Editing…"); updateMeta();
+  writeBackup();
+  scheduleSave();
+}
+function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 2500) }
+
+// Autosave: one GitHub commit after you pause typing for 2.5s
+async function saveNow(){
+  clearTimeout(saveTimer);
+  if(saving) await saving;               // never run two saves at once
+  if(!current || !dirty) return;
+  const p = current;
+  saving = (async () => {
+    dirty = false; setStatus("Saving…");
+    p.title = $("title").value.trim() || "Untitled";
+    p.body = turndown.turndown($("body").innerHTML).trim();
+    p.updated = new Date().toISOString();
+    try{
+      p.sha = await writeFile(PRIVATE_REPO, p.path, buildFile(p), p.sha, `Edit "${p.title}"`);
+      if(p.status === "published") await publish(p);   // keep the live copy in sync
+      clearBackup(p);
+      setStatus(dirty ? "Editing…" : "Saved");
+    }catch(e){
+      dirty = true; setStatus("Not saved");
+      handleError(e);
+    }
+  })();
+  await saving; saving = null;
+}
+
+/* Local safety net: while typing, the latest text is also kept in this browser,
+   so a lost connection or closed tab doesn't lose anything. */
+const bkKey = p => "writing-desk-backup:" + p.path;
+function writeBackup(){ if(current) store.set(bkKey(current), JSON.stringify({sha:current.sha, title:$("title").value, html:$("body").innerHTML})) }
+function readBackup(p){ try{ const b = JSON.parse(store.get(bkKey(p))); return b && b.sha===p.sha ? b : null }catch{ return null } }
+function clearBackup(p){ store.del(bkKey(p)) }
+
+async function newPiece(){
+  const now = new Date();
+  const created = today();
+  const p = { path:`${WRITING_DIR}/${created}-untitled-${now.getTime().toString(36)}.md`, sha:null,
+    title:"Untitled", status: mobileTab==="published" ? "draft" : mobileTab, created, updated:now.toISOString(), published_date:"", slug:"", body:"" };
+  try{
+    p.sha = await writeFile(PRIVATE_REPO, p.path, buildFile(p), null, "New piece");
+    pieces.push(p); openEditor(p);
+  }catch(e){ handleError(e) }
+}
+
+async function deletePiece(){
+  const p = current; if(!p) return;
+  if(!confirm(`Delete “${p.title}”? ${p.status==="published"?"It will also be removed from your site. ":""}You can still recover it from GitHub's history.`)) return;
+  try{
+    clearTimeout(saveTimer); dirty = false;
+    if(p.status === "published") await unpublish(p);
+    await deleteFile(PRIVATE_REPO, p.path, p.sha, `Delete "${p.title}"`);
+    clearBackup(p);
+    pieces = pieces.filter(x => x !== p);
+    current = null; $("editor").hidden = true; $("board").hidden = false; renderBoard();
+    toast("Deleted");
+  }catch(e){ handleError(e) }
+}
+
+/* ---------- toolbar ---------- */
+document.execCommand("defaultParagraphSeparator", false, "p");
+$("tools").addEventListener("mousedown", e => { if(e.target.closest("button")) e.preventDefault() }); // keep the cursor in the text
+$("tools").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  $("body").focus();
+  if(b.dataset.cmd) document.execCommand(b.dataset.cmd);
+  else if(b.dataset.block){
+    const cur = (document.queryCommandValue("formatBlock")||"").toLowerCase();
+    document.execCommand("formatBlock", false, cur === b.dataset.block ? "p" : b.dataset.block);
+  } else if(b.hasAttribute("data-link")){
+    const url = prompt("Link address (https://…)");
+    if(url) document.execCommand("createLink", false, /^https?:|^mailto:/.test(url) ? url : "https://" + url);
+  }
+  onEdit(); updateTools();
+});
+function updateTools(){
+  const block = (document.queryCommandValue("formatBlock")||"").toLowerCase();
+  for(const b of $("tools").querySelectorAll("button")){
+    let on = false;
+    try{ if(b.dataset.cmd) on = document.queryCommandState(b.dataset.cmd); else if(b.dataset.block) on = block === b.dataset.block }catch{}
+    b.classList.toggle("on", on);
+  }
+}
+document.addEventListener("selectionchange", () => { if(!$("editor").hidden) updateTools() });
+
+// Paste from Word / web: keep headings, bold, lists, links; drop everything else
+$("body").addEventListener("paste", e => {
+  const html = e.clipboardData.getData("text/html");
+  const text = e.clipboardData.getData("text/plain");
+  e.preventDefault();
+  if(html){
+    // round-trip through Markdown = only clean, simple formatting survives
+    const md = turndown.turndown(clean(html.replace(/<!--[\s\S]*?-->/g,"")));
+    document.execCommand("insertHTML", false, clean(marked.parse(md)));
+  } else {
+    const paras = text.split(/\n{2,}/).map(t => "<p>" + t.replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])).replace(/\n/g,"<br>") + "</p>").join("");
+    document.execCommand("insertHTML", false, paras);
+  }
+  onEdit();
+});
+$("body").addEventListener("input", onEdit);
+const fitTitle = () => { const t = $("title"); t.style.height = "auto"; t.style.height = t.scrollHeight + "px" };
+$("title").addEventListener("input", () => { fitTitle(); onEdit() });
+$("title").addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); $("body").focus() } });
+$("statusSelect").addEventListener("change", e => move(current, e.target.value));
+$("backBtn").onclick = () => history.back();
+window.addEventListener("popstate", () => { if(!$("editor").hidden) closeEditor() });
+$("deleteBtn").onclick = deletePiece;
+$("newBtn").onclick = newPiece;
+$("refreshBtn").onclick = loadAll;
+window.addEventListener("online", () => { if(dirty) saveNow() });
+document.addEventListener("visibilitychange", () => { if(document.visibilityState==="hidden") saveNow() });
+window.addEventListener("beforeunload", e => { if(dirty){ saveNow(); e.preventDefault(); e.returnValue = "" } });
+document.addEventListener("keydown", e => { if((e.metaKey||e.ctrlKey) && e.key==="s" && !$("editor").hidden){ e.preventDefault(); saveNow() } });
+
+/* =====================================================================
+   UNLOCK / LOCK
+   ===================================================================== */
+async function unlock(){
+  const t = $("tokenInput").value.trim();
+  $("lockErr").textContent = "";
+  if(!t) return;
+  token = t;
+  $("unlockBtn").disabled = true; $("unlockBtn").textContent = "Checking…";
+  try{
+    await gh("GET", `/repos/${OWNER}/${PRIVATE_REPO}`);
+    await gh("GET", `/repos/${OWNER}/${SITE_REPO}`);
+    store.set(TOKEN_KEY, t);
+    $("tokenInput").value = "";
+    showBoard();
+  }catch(e){
+    token = null;
+    $("lockErr").textContent = e.status===401 ? "That token isn't valid (or has expired)."
+      : e.status===404 ? "The token works, but can't see both repositories. Check step 3."
+      : "Couldn't reach GitHub. Check your connection and try again.";
+  }
+  $("unlockBtn").disabled = false; $("unlockBtn").textContent = "Unlock";
+}
+function lock(){
+  if(!confirm("Forget the token on this device? You'll need to paste it again to write here.")) return;
+  store.del(TOKEN_KEY); token = null; pieces = [];
+  $("board").hidden = true; $("lock").hidden = false;
+}
+function showBoard(){ $("lock").hidden = true; $("board").hidden = false; loadAll() }
+$("unlockBtn").onclick = unlock;
+$("tokenInput").addEventListener("keydown", e => { if(e.key==="Enter") unlock() });
+$("lockBtn").onclick = lock;
+
+/* ---------- messages ---------- */
+let toastTimer;
+function toast(html, isErr){
+  const t = $("toast"); t.innerHTML = html; t.className = isErr ? "err" : ""; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.hidden=true, isErr ? 7000 : 4500);
+}
+function handleError(e){
+  console.error(e);
+  if(e.status === 401){ store.del(TOKEN_KEY); token = null; $("editor").hidden = true; $("board").hidden = true; $("lock").hidden = false; $("lockErr").textContent = "Your token stopped working (maybe it expired). Paste a new one."; return }
+  if(e.status === 409 || e.status === 422 && /sha/i.test(e.detail||"")) return toast("This piece was changed somewhere else (another device?). Tap ↻ to reload it.", true);
+  if(e.status === 403 || e.status === 404) return toast("GitHub refused that. Does your token have “Contents: Read and write” on both repos?", true);
+  toast("Couldn't reach GitHub. Your text is kept on this device; it'll save when you're back online.", true);
+}
+
+/* ---------- start ---------- */
+token ? showBoard() : ($("lock").hidden = false);
+</script>
+</body>
+</html>
