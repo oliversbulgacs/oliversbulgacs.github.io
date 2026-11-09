@@ -7,8 +7,6 @@ permalink: /about/
 
 # About me
 
-I do a lot of things I care about, and I hope that through them I can contribute to people's maturation, development, and to making their lives meaningful.
-
-This is where I write about development.
+I write about growing up for real: taking responsibility, facing the hard parts of ourselves, and finding a life worth living.
 
 </div>
