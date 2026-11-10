@@ -116,6 +116,44 @@ button{cursor:pointer}
 .efoot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 16px;padding-bottom:max(8px,env(safe-area-inset-bottom));border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 .efoot a{color:var(--accent)}
 
+/* ---------- Daily goal ---------- */
+.today{display:flex;align-items:center;gap:10px;margin:0 20px 10px;padding:10px 14px;border:1px solid var(--line);background:var(--card);border-radius:12px;text-align:left;width:auto;align-self:flex-start;box-shadow:var(--shadow)}
+.today:hover{border-color:var(--muted)}
+.today svg{flex:none}
+.today b{font-weight:600}
+.today .sub{color:var(--muted);font-size:13px}
+.today .go{color:var(--accent);font-size:13px;font-weight:500;margin-left:6px}
+.ring-bg{stroke:var(--line)}
+.ring-fg{stroke:var(--c-published);transition:stroke-dashoffset .4s}
+@media (max-width:820px){ .today{margin:0 16px 10px;align-self:stretch} .today .go{margin-left:auto} }
+
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px}
+.sheet-card{background:var(--bg);border-radius:16px;width:100%;max-width:400px;padding:18px 18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.25);max-height:100%;overflow-y:auto}
+@media (max-width:520px){ .sheet{align-items:flex-end;padding:0} .sheet-card{border-radius:16px 16px 0 0;max-width:none;padding-bottom:max(20px,env(safe-area-inset-bottom))} }
+.cal-head{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.cal-head h2{flex:1;margin:0;font:600 1.25rem var(--serif);text-align:center}
+.cal-head button{border:0;background:transparent;font-size:20px;width:36px;height:36px;border-radius:8px;color:var(--muted)}
+.cal-head button:hover:not(:disabled){background:var(--panel);color:var(--text)}
+.cal-head button:disabled{opacity:.3;cursor:default}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.cal-grid .wd{text-align:center;font-size:11px;color:var(--muted);font-weight:600;padding-bottom:2px}
+.cal-grid .d{width:100%;min-width:0;aspect-ratio:1;max-height:46px;border-radius:8px;border:0;background:var(--panel);font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--muted);padding:0}
+.cal-grid .d.some{background:color-mix(in srgb,var(--c-published) 28%,var(--panel));color:var(--text)}
+.cal-grid .d.met{background:var(--c-published);color:#fff;font-weight:600}
+.cal-grid .d.today{outline:2px solid var(--text);outline-offset:1px}
+.cal-grid .d.future{background:transparent;opacity:.45;cursor:default}
+.cal-grid .d.sel{box-shadow:0 0 0 2px var(--accent) inset}
+.cal-detail{min-height:1.5em;text-align:center;font-size:14px;margin:12px 0 4px;color:var(--muted)}
+.legend{display:flex;gap:14px;justify-content:center;font-size:12px;color:var(--muted);margin-bottom:14px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.cal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.cal-stats div{background:var(--panel);border-radius:10px;padding:10px;text-align:center}
+.cal-stats b{display:block;font:600 1.3rem var(--serif)}
+.cal-stats span{font-size:12px;color:var(--muted)}
+.goal-row{display:flex;align-items:center;gap:8px;font-size:14px;border-top:1px solid var(--line);padding-top:14px}
+.goal-row input{width:90px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);text-align:right}
+.goal-row .btn{margin-left:auto}
+
 /* ---------- Toast ---------- */
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:20;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
 #toast a{color:inherit;font-weight:600}
@@ -149,6 +187,11 @@ button{cursor:pointer}
     <button class="btn ghost" id="refreshBtn" title="Reload from GitHub">↻</button>
     <button class="btn ghost" id="lockBtn" title="Forget token on this device">Lock</button>
   </div>
+  <button class="today" id="todayBtn" title="Your daily writing calendar">
+    <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-bg" cx="18" cy="18" r="15" fill="none" stroke-width="4"/><circle class="ring-fg" id="ring" cx="18" cy="18" r="15" fill="none" stroke-width="4" stroke-linecap="round" stroke-dasharray="94.25" stroke-dashoffset="94.25" transform="rotate(-90 18 18)"/></svg>
+    <span><b id="todayWords">0</b> / <span id="todayGoal">300</span> words today<br><span class="sub" id="streakText">Start your streak today</span></span>
+    <span class="go">Calendar →</span>
+  </button>
   <nav class="tabs" id="tabs"></nav>
   <div class="columns" id="columns"><div id="loading">Loading your writing…</div></div>
   <button class="btn primary fab" id="newBtn">+ New piece</button>
@@ -181,10 +224,35 @@ button{cursor:pointer}
     </div>
   </div>
   <div class="efoot">
-    <span id="wordCount">0 words</span>
+    <span><span id="wordCount">0 words</span> · <span id="todayMini"></span></span>
     <span id="liveLink"></span>
   </div>
 </section>
+
+<!-- 4. CALENDAR -->
+<div class="sheet" id="calSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-label="Writing calendar">
+    <div class="cal-head">
+      <button id="calPrev" aria-label="Previous month">‹</button>
+      <h2 id="calTitle"></h2>
+      <button id="calNext" aria-label="Next month">›</button>
+      <button id="calClose" aria-label="Close">✕</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-detail" id="calDetail"></div>
+    <div class="legend"><span><i style="background:var(--c-published)"></i>Goal reached</span><span><i style="background:color-mix(in srgb,var(--c-published) 28%,var(--panel))"></i>Wrote something</span></div>
+    <div class="cal-stats">
+      <div><b id="stStreak">0</b><span>day streak</span></div>
+      <div><b id="stBest">0</b><span>best streak</span></div>
+      <div><b id="stMonth">0</b><span>words this month</span></div>
+    </div>
+    <div class="goal-row">
+      <label for="goalInput">Daily goal</label>
+      <input id="goalInput" type="number" min="10" step="50" inputmode="numeric"> words
+      <button class="btn" id="goalSave">Save</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast" hidden></div>
 
@@ -447,7 +515,7 @@ const clean = html => DOMPurify.sanitize(html, {
 let saveTimer = null, dirty = false, saving = null;
 
 function openEditor(p){
-  current = p;
+  current = p; pastedWords = 0;
   $("title").value = p.title === "Untitled" ? "" : p.title;
   $("body").innerHTML = clean(marked.parse(p.body || ""));
   $("statusSelect").innerHTML = statusOptions(p.status);
@@ -462,6 +530,7 @@ function openEditor(p){
 }
 async function closeEditor(){
   await saveNow();
+  flushStats();
   current = null;
   $("editor").hidden = true; $("board").hidden = false;
   renderBoard();
@@ -491,7 +560,10 @@ async function saveNow(){
   saving = (async () => {
     dirty = false; setStatus("Saving…");
     p.title = $("title").value.trim() || "Untitled";
+    const wordsBefore = words(p.body || "");
     p.body = turndown.turndown($("body").innerHTML).trim();
+    addWords(words(p.body) - wordsBefore - pastedWords);   // new words you typed count toward today
+    pastedWords = 0;
     p.updated = new Date().toISOString();
     try{
       p.sha = await writeFile(PRIVATE_REPO, p.path, buildFile(p), p.sha, `Edit "${p.title}"`);
@@ -538,6 +610,144 @@ async function deletePiece(){
   }catch(e){ handleError(e) }
 }
 
+/* =====================================================================
+   DAILY GOAL & CALENDAR
+   - Every save compares the new word count with the previous one; any
+     increase counts as words written today. Pasted text doesn't count.
+   - Totals live in desk/stats.json in your PRIVATE repo:
+       {"goal":300,"days":{"2026-11-10":412, ...}}
+   - New words wait in "pending" (also kept on this device), then get
+     ADDED to the latest file from GitHub, so two devices never overwrite
+     each other's counts.
+   ===================================================================== */
+const STATS_PATH = "desk/stats.json";
+const PENDING_KEY = "writing-desk-pending-words";
+let stats = {goal:300, days:{}};
+let pending = {}; try{ pending = JSON.parse(store.get(PENDING_KEY)) || {} }catch{}
+let goalDirty = false, statsTimer = null, flushing = null, pastedWords = 0;
+let calMonth = new Date(); calMonth.setDate(1);
+
+const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const countOn = k => (stats.days[k]||0) + (pending[k]||0);
+
+async function loadStats(){
+  try{
+    const r = await readFile(PRIVATE_REPO, STATS_PATH);
+    if(r){ const j = JSON.parse(r.text); stats = {goal: +j.goal || 300, days: j.days || {}} }
+  }catch(e){ console.warn("stats", e) }
+  renderToday();
+  if(Object.keys(pending).length) flushStats();
+}
+function addWords(n){
+  if(!(n > 0)) return;
+  const k = dayKey(), before = countOn(k);
+  pending[k] = (pending[k]||0) + n;
+  store.set(PENDING_KEY, JSON.stringify(pending));
+  if(before < stats.goal && countOn(k) >= stats.goal) toast(`🎉 Daily goal reached: ${countOn(k)} words today. ${streak()>1 ? streak()+"-day streak!" : ""}`);
+  renderToday();
+  clearTimeout(statsTimer); statsTimer = setTimeout(flushStats, 15000);
+}
+async function flushStats(){
+  clearTimeout(statsTimer);
+  if(flushing) return flushing;
+  if(!Object.keys(pending).length && !goalDirty) return;
+  flushing = (async () => {
+    for(let attempt = 0; attempt < 3; attempt++){
+      try{
+        const r = await readFile(PRIVATE_REPO, STATS_PATH);
+        let remote = {goal: stats.goal, days:{}};
+        if(r){ try{ const j = JSON.parse(r.text); remote = {goal: +j.goal || stats.goal, days: j.days || {}} }catch{} }
+        const send = {...pending};
+        const out = {goal: goalDirty ? stats.goal : remote.goal, days: {...remote.days}};
+        for(const k in send) out.days[k] = (out.days[k]||0) + send[k];
+        await writeFile(PRIVATE_REPO, STATS_PATH, JSON.stringify(out, null, 1) + "\n", r?.sha, "Update writing stats");
+        for(const k in send){ pending[k] -= send[k]; if(pending[k] <= 0) delete pending[k] }
+        store.set(PENDING_KEY, JSON.stringify(pending));
+        stats = out; goalDirty = false;
+        break;
+      }catch(e){
+        if(e.status === 409 || e.status === 422) continue;   // someone else saved first: re-read and retry
+        console.warn("stats save failed; will retry later", e); break;
+      }
+    }
+  })();
+  await flushing; flushing = null;
+  renderToday();
+}
+function streak(){
+  const d = new Date();
+  if(countOn(dayKey(d)) < stats.goal) d.setDate(d.getDate()-1);   // today isn't over yet
+  let n = 0;
+  while(countOn(dayKey(d)) >= stats.goal){ n++; d.setDate(d.getDate()-1) }
+  return n;
+}
+function bestStreak(){
+  const keys = Object.keys({...stats.days, ...pending}).sort();
+  if(!keys.length) return 0;
+  let best = 0, run = 0, d = new Date(keys[0] + "T12:00:00");
+  const end = new Date();
+  while(dayKey(d) <= dayKey(end)){
+    run = countOn(dayKey(d)) >= stats.goal ? run+1 : 0; best = Math.max(best, run);
+    d.setDate(d.getDate()+1);
+  }
+  return best;
+}
+function renderToday(){
+  const n = countOn(dayKey()), g = stats.goal, s = streak();
+  $("todayWords").textContent = n.toLocaleString();
+  $("todayGoal").textContent = g.toLocaleString();
+  $("ring").style.strokeDashoffset = 94.25 * (1 - Math.min(1, n/g));
+  $("streakText").textContent = n >= g ? `Goal reached ✓ · ${s}-day streak`
+    : s ? `🔥 ${s}-day streak · ${g-n} words to keep it going` : n ? `${g-n} words to go` : "Start your streak today";
+  $("todayMini").textContent = `${n.toLocaleString()} / ${g.toLocaleString()} today`;
+  if(!$("calSheet").hidden) renderCal();
+}
+function renderCal(sel){
+  const y = calMonth.getFullYear(), m = calMonth.getMonth(), todayK = dayKey();
+  $("calTitle").textContent = calMonth.toLocaleDateString(undefined, {month:"long", year:"numeric"});
+  const now = new Date(); $("calNext").disabled = y > now.getFullYear() || (y === now.getFullYear() && m >= now.getMonth());
+  const grid = $("calGrid"); grid.innerHTML = "";
+  for(const w of ["M","T","W","T","F","S","S"]) grid.insertAdjacentHTML("beforeend", `<div class="wd">${w}</div>`);
+  const offset = (new Date(y, m, 1).getDay() + 6) % 7;
+  for(let i = 0; i < offset; i++) grid.insertAdjacentHTML("beforeend", "<div></div>");
+  const daysIn = new Date(y, m+1, 0).getDate();
+  let total = 0;
+  for(let d = 1; d <= daysIn; d++){
+    const k = dayKey(new Date(y, m, d)), n = countOn(k); total += n;
+    const b = document.createElement("button");
+    b.className = "d" + (k > todayK ? " future" : n >= stats.goal ? " met" : n > 0 ? " some" : "") + (k === todayK ? " today" : "") + (k === sel ? " sel" : "");
+    b.textContent = d;
+    b.title = `${n} words`;
+    if(k <= todayK) b.onclick = () => { renderCal(k); showDay(k) };
+    grid.append(b);
+  }
+  $("stStreak").textContent = streak();
+  $("stBest").textContent = bestStreak();
+  $("stMonth").textContent = total.toLocaleString();
+}
+function showDay(k){
+  const n = countOn(k);
+  const label = new Date(k + "T12:00:00").toLocaleDateString(undefined, {weekday:"short", month:"short", day:"numeric"});
+  $("calDetail").textContent = `${label}: ${n ? n.toLocaleString() + " words" + (n >= stats.goal ? " ✓" : "") : "no writing"}`;
+}
+function openCal(){
+  calMonth = new Date(); calMonth.setDate(1);
+  $("goalInput").value = stats.goal;
+  $("calSheet").hidden = false; renderCal(dayKey()); showDay(dayKey());
+}
+$("todayBtn").onclick = openCal;
+$("calClose").onclick = () => $("calSheet").hidden = true;
+$("calSheet").addEventListener("click", e => { if(e.target.id === "calSheet") $("calSheet").hidden = true });
+$("calPrev").onclick = () => { calMonth.setMonth(calMonth.getMonth()-1); renderCal(); $("calDetail").textContent = "" };
+$("calNext").onclick = () => { calMonth.setMonth(calMonth.getMonth()+1); renderCal(); $("calDetail").textContent = "" };
+$("goalSave").onclick = () => {
+  const g = Math.round(+$("goalInput").value);
+  if(!(g >= 10)) return toast("Pick a goal of at least 10 words.", true);
+  stats.goal = g; goalDirty = true; renderToday(); flushStats();
+  toast(`Daily goal set to ${g} words`);
+};
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("calSheet").hidden) $("calSheet").hidden = true });
+
 /* ---------- toolbar ---------- */
 document.execCommand("defaultParagraphSeparator", false, "p");
 $("tools").addEventListener("mousedown", e => { if(e.target.closest("button")) e.preventDefault() }); // keep the cursor in the text
@@ -568,6 +778,7 @@ document.addEventListener("selectionchange", () => { if(!$("editor").hidden) upd
 $("body").addEventListener("paste", e => {
   const html = e.clipboardData.getData("text/html");
   const text = e.clipboardData.getData("text/plain");
+  pastedWords += words(text || "");
   e.preventDefault();
   if(html){
     // round-trip through Markdown = only clean, simple formatting survives
@@ -588,9 +799,9 @@ $("backBtn").onclick = () => history.back();
 window.addEventListener("popstate", () => { if(!$("editor").hidden) closeEditor() });
 $("deleteBtn").onclick = deletePiece;
 $("newBtn").onclick = newPiece;
-$("refreshBtn").onclick = loadAll;
-window.addEventListener("online", () => { if(dirty) saveNow() });
-document.addEventListener("visibilitychange", () => { if(document.visibilityState==="hidden") saveNow() });
+$("refreshBtn").onclick = () => { loadAll(); loadStats() };
+window.addEventListener("online", () => { if(dirty) saveNow(); flushStats() });
+document.addEventListener("visibilitychange", () => { if(document.visibilityState==="hidden") saveNow().then(flushStats) });
 window.addEventListener("beforeunload", e => { if(dirty){ saveNow(); e.preventDefault(); e.returnValue = "" } });
 document.addEventListener("keydown", e => { if((e.metaKey||e.ctrlKey) && e.key==="s" && !$("editor").hidden){ e.preventDefault(); saveNow() } });
 
@@ -622,7 +833,7 @@ function lock(){
   store.del(TOKEN_KEY); token = null; pieces = [];
   $("board").hidden = true; $("lock").hidden = false;
 }
-function showBoard(){ $("lock").hidden = true; $("board").hidden = false; loadAll() }
+function showBoard(){ $("lock").hidden = true; $("board").hidden = false; loadAll(); loadStats() }
 $("unlockBtn").onclick = unlock;
 $("tokenInput").addEventListener("keydown", e => { if(e.key==="Enter") unlock() });
 $("lockBtn").onclick = lock;
